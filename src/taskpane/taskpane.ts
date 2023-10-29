@@ -11,33 +11,56 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.PowerPoint) {
     document.getElementById("sideload-msg").style.display = "none";
     document.getElementById("app-body").style.display = "flex";
-    document.getElementById("insert-image").onclick = () => clearMessage(insertImage);
+    document.getElementById("load-config").onclick = () => clearMessage(loadConfig);
+    document.getElementById("save-config").onclick = () => clearMessage(saveConfig);
     // TODO4: Assign event handler for insert-text button.
     // TODO6: Assign event handler for get-slide-metadata button.
     // TODO8: Assign event handlers for add-slides and the four navigation buttons.
   }
 });
 
-function insertImage() {
-  // Call Office.js to insert the image into the document.
-  Office.context.document.setSelectedDataAsync(
-    base64Image,
-    {
-      coercionType: Office.CoercionType.Image
-    },
-    (asyncResult) => {
-      if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-        setMessage("Error: " + asyncResult.error.message);
-      }
+function loadConfig() {
+  PowerPoint.run(async function (context) {
+    const slides = context.presentation.getSelectedSlides()
+    slides.load("tags/key, tags/value");
+    slides.load()
+    await context.sync()
+    
+    if (slides.items.length == 0) {
+      setMessage("no slide selected")
+      return
     }
-  );
+
+    var config = slides.getItemAt(0).tags.getItemOrNullObject("KEY")
+    config.load("value")
+    await context.sync()
+    let value= config.isNullObject ? "{}":config.value
+
+    setMessage(value)
+
+  })
 }
 
-// TODO5: Define the insertText function.
+function saveConfig(){
+  PowerPoint.run(async (context: PowerPoint.RequestContext) => {
+    const slides = context.presentation.getSelectedSlides()
+    slides.load("items")
+    await context.sync()
 
-// TODO7: Define the getSlideMetadata function.
+    if (slides.items.length == 0) {
+      setMessage("no slide selected")
+      return
+    }
 
-// TODO9: Define the addSlides and navigation functions.
+    slides.getItemAt(0).tags.add("KEY", JSON.stringify({
+      key1: "val1"
+    }))
+
+  })
+
+
+
+}
 
 async function clearMessage(callback) {
   document.getElementById("message").innerText = "";
